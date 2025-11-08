@@ -1,6 +1,8 @@
 import streamlit as st
 import datetime
 
+#this file is the classes used for the To Do List feature
+
 class Task:
     def __init__(self, task): #constructor
         self.task = task
