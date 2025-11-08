@@ -3,9 +3,10 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 import uuid
 """
-Memory Book Module
-Manages photo, video, and audio uploads for dementia patient memory support. This feature allows the  carers and families to upload and organize multimedia
-content to help patients with memory recall and provide comfort.
+Family Memory Book Module
+Editable memory book for family members to upload and manage photos, videos, and audio.
+
+Family members can add, view, and delete media to support their loved one's memory.
 """
 
 class MediaCategories:
@@ -17,18 +18,59 @@ class MediaCategories:
     
     @staticmethod
     def get_categories() -> List[str]:
-        """
-        Get list of available categories.
-        
-        Returns:
-            List of category names
-        """
+        """Get list of available categories."""
         return MediaCategories.CATEGORIES
+
+
+class FamilyPatientSelector:
+    """
+    Allows family members to select which patient's memory book to manage.
+    """
+    
+    @staticmethod
+    def render_selector() -> Optional[tuple[str, str]]:
+        """
+        Render patient selection dropdown for family members.
+        
+        """
+        if not st.session_state.patients:
+            st.warning("No patients registered in the system.")
+            return None
+        
+        default_index = 0
+        if st.session_state.current_patient:
+            try:
+                default_index = list(st.session_state.patients.keys()).index(
+                    st.session_state.current_patient
+                )
+            except ValueError:
+                default_index = 0
+        
+        patient_options = {
+            pid: f"{p.get('patient_id_number', 'N/A')} - {p['name']}"
+            for pid, p in st.session_state.patients.items()
+        }
+        
+        selected_display = st.selectbox(
+            "Select Your Loved One",
+            options=list(patient_options.values()),
+            index=default_index
+        )
+        
+        selected_patient_id = [
+            pid for pid, display in patient_options.items()
+            if display == selected_display
+        ][0]
+        
+        st.session_state.current_patient = selected_patient_id
+        patient_name = st.session_state.patients[selected_patient_id]['name']
+        
+        return selected_patient_id, patient_name
 
 
 class MediaUploadForm:
     """
-    Handles media upload form rendering and data collection.
+    Handles media upload form for family members.
     """
     
     @staticmethod
@@ -39,9 +81,10 @@ class MediaUploadForm:
         Returns:
             Media data dictionary or None if not submitted
         """
-        st.subheader("Upload New Media")
+        st.subheader("Upload New Memory")
+        st.info("💝 Share photos, videos, or music to help your loved one remember happy times")
         
-        with st.form("upload_media_form"):
+        with st.form("family_upload_media_form"):
             col1, col2 = st.columns(2)
             
             with col1:
@@ -50,8 +93,8 @@ class MediaUploadForm:
                     ["Photo", "Video", "Audio"]
                 )
                 title = st.text_input(
-                    "Title",
-                    placeholder="e.g., Family gathering 2023"
+                    "Title*",
+                    placeholder="e.g., Christmas 2023, Dad's Birthday"
                 )
             
             with col2:
@@ -60,21 +103,21 @@ class MediaUploadForm:
                     MediaCategories.get_categories()
                 )
                 uploaded_file = st.file_uploader(
-                    "Upload File",
+                    "Upload File*",
                     type=["jpg", "jpeg", "png", "mp4", "mp3", "wav"]
                 )
             
             description = st.text_area(
                 "Description",
-                placeholder="Brief description of this memory"
+                placeholder="Describe this memory and why it's special"
             )
             
             people_tagged = st.text_input(
-                "People in this",
-                placeholder="Names of people"
+                "People in this memory",
+                placeholder="Names of people in the photo/video"
             )
             
-            submitted = st.form_submit_button("Upload", use_container_width=True)
+            submitted = st.form_submit_button("Upload Memory", use_container_width=True)
             
             if submitted and uploaded_file and title:
                 return MediaUploadForm._create_media_entry(
@@ -99,20 +142,7 @@ class MediaUploadForm:
         description: str,
         people_tagged: str
     ) -> Dict[str, Any]:
-        """
-        Create media entry dictionary from form data.
-        
-        Args:
-            media_type: Type of media
-            title: Media title
-            category: Category
-            uploaded_file: Uploaded file object
-            description: Description text
-            people_tagged: People in the media
-            
-        Returns:
-            Media entry dictionary
-        """
+        """Create media entry from form data."""
         file_data = uploaded_file.read()
         
         return {
@@ -126,7 +156,7 @@ class MediaUploadForm:
             'file_type': uploaded_file.type,
             'file_data': file_data,
             'uploaded_on': datetime.now().isoformat(),
-            'uploaded_by': "Carer"
+            'uploaded_by': "Family Member"
         }
 
 
@@ -137,32 +167,15 @@ class MediaFilter:
     
     @staticmethod
     def render_filter() -> str:
-        """
-        Render category filter.
-        
-        Returns:
-            Selected category
-        """
+        """Render category filter."""
         return st.selectbox(
             "Filter by Category",
             ["All"] + MediaCategories.get_categories()
         )
     
     @staticmethod
-    def apply_filter(
-        media_list: List[Dict],
-        category_filter: str
-    ) -> List[Dict]:
-        """
-        Apply category filter to media list.
-        
-        Args:
-            media_list: List of media items
-            category_filter: Category to filter by
-            
-        Returns:
-            Filtered list of media items
-        """
+    def apply_filter(media_list: List[Dict], category_filter: str) -> List[Dict]:
+        """Apply category filter to media list."""
         if category_filter == "All":
             return media_list
         
@@ -171,26 +184,23 @@ class MediaFilter:
 
 class MediaRenderer:
     """
-    Renders media items in grid layout with preview.
+    Renders media items in grid layout.
     """
     
     @staticmethod
-    def render_media_grid(
-        patient_id: str,
-        media_list: List[Dict]
-    ) -> None:
+    def render_media_grid(patient_id: str, media_list: List[Dict]) -> None:
         """
         Render media items in grid layout.
         
         Args:
             patient_id: ID of the patient
-            media_list: List of media items to display
+            media_list: List of media items
         """
         if not media_list:
-            st.info("No media uploaded yet for this patient")
+            st.info("No memories uploaded yet. Be the first to add one!")
             return
         
-        st.write(f"**Showing {len(media_list)} items**")
+        st.write(f"**Showing {len(media_list)} memory/memories**")
         
         sorted_media = sorted(
             media_list,
@@ -206,19 +216,10 @@ class MediaRenderer:
     
     @staticmethod
     def _render_media_card(patient_id: str, memory: Dict[str, Any]) -> None:
-        """
-        Render individual media card.
-        
-        Args:
-            patient_id: ID of the patient
-            memory: Media item dictionary
-        """
+        """individual media card."""
         with st.container(border=True):
-            st.write(f"**{memory['title']}**")
-            st.write(
-                f"Type: {memory['media_type']} | "
-                f"Category: {memory['category']}"
-            )
+            st.write(f"### {memory['title']}")
+            st.write(f"**Type:** {memory['media_type']} | **Category:** {memory['category']}")
             
             MediaRenderer._render_media_preview(memory)
             
@@ -231,36 +232,26 @@ class MediaRenderer:
             uploaded_date = datetime.fromisoformat(
                 memory['uploaded_on']
             ).strftime('%d %b %Y')
-            st.caption(f"Uploaded on {uploaded_date}")
             
-            col1, col2 = st.columns(2)
+            uploaded_by = memory.get('uploaded_by', 'Unknown')
+            st.caption(f"Uploaded by {uploaded_by} on {uploaded_date}")
             
-            with col1:
-                if st.button(
-                    "View Full",
-                    key=f"view_{memory['id']}",
-                    use_container_width=True
-                ):
-                    st.info("Viewing full media")
-            
-            with col2:
-                if st.button(
-                    "Delete",
-                    key=f"del_{memory['id']}",
-                    use_container_width=True
-                ):
+            if st.button(
+                "Delete Memory",
+                key=f"del_{memory['id']}",
+                use_container_width=True
+            ):
+                if st.session_state.get(f"confirm_delete_{memory['id']}", False):
                     st.session_state.memory_book[patient_id].remove(memory)
-                    st.success("Media deleted")
+                    st.success("Memory deleted")
                     st.rerun()
+                else:
+                    st.session_state[f"confirm_delete_{memory['id']}"] = True
+                    st.warning("Click again to confirm deletion")
     
     @staticmethod
     def _render_media_preview(memory: Dict[str, Any]) -> None:
-        """
-        Render media preview based on type.
-        
-        Args:
-            memory: Media item dictionary
-        """
+        """Render media preview."""
         if memory['media_type'] == 'Photo':
             st.image(memory['file_data'], use_container_width=True)
         elif memory['media_type'] == 'Video':
@@ -271,53 +262,28 @@ class MediaRenderer:
 
 class MediaStatistics:
     """
-    Calculates and displays media statistics.
+    Displays the media statistics.
     """
     
     @staticmethod
     def render(media_list: List[Dict]) -> None:
-        """
-        Display media statistics.
-        
-        Args:
-            media_list: List of all media items
-        """
+        """Displays the   media statistics."""
         if not media_list:
             return
         
         st.divider()
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Total Items", len(media_list))
+            st.metric("Total Memories", len(media_list))
         
         with col2:
             photos = sum(1 for m in media_list if m['media_type'] == 'Photo')
             st.metric("Photos", photos)
         
-        MediaStatistics._render_category_breakdown(media_list)
-    
-    @staticmethod
-    def _render_category_breakdown(media_list: List[Dict]) -> None:
-        """
-        Render breakdown of media by category.
-        
-        Args:
-            media_list: List of all media items
-        """
-        st.write("### Media by Category")
-        
-        category_counts = {}
-        for media in media_list:
-            cat = media['category']
-            category_counts[cat] = category_counts.get(cat, 0) + 1
-        
-        for category, count in sorted(
-            category_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        ):
-            st.write(f"- **{category}:** {count} items")
+        with col3:
+            videos = sum(1 for m in media_list if m['media_type'] == 'Video')
+            st.metric("Videos", videos)
 
 
 class MemoryBookManager:
@@ -327,46 +293,27 @@ class MemoryBookManager:
     
     @staticmethod
     def initialize_memory_book(patient_id: str) -> None:
-        """
-        Initialize memory book for patient if doesn't exist.
-        
-        Args:
-            patient_id: ID of the patient
-        """
+        """Initialize memory book for patient."""
         if patient_id not in st.session_state.memory_book:
             st.session_state.memory_book[patient_id] = []
     
     @staticmethod
     def add_media(patient_id: str, media_data: Dict[str, Any]) -> None:
-        """
-        Add media item to patient's memory book.
-        
-        Args:
-            patient_id: ID of the patient
-            media_data: Media item dictionary
-        """
+        """Add media item to memory book."""
         st.session_state.memory_book[patient_id].append(media_data)
     
     @staticmethod
     def get_media(patient_id: str) -> List[Dict]:
-        """
-        Get all media for patient.
-        
-        Args:
-            patient_id: ID of the patient
-            
-        Returns:
-            List of media items
-        """
+        """Get all media for patient."""
         return st.session_state.memory_book.get(patient_id, [])
 
 
 def render_page() -> None:
-    """Main function to render the Memory Book page."""
-    st.title("Memory Book - Photos & Media")
+    """Main function to render the Family Memory Book page."""
+    st.title("Memory Book")
+    st.success("✏️ You can add, view, and manage memories for your loved one")
     
-    from pages.daily_logs import PatientSelector
-    patient_info = PatientSelector.render_selector()
+    patient_info = FamilyPatientSelector.render_selector()
     
     if not patient_info:
         st.stop()
@@ -381,7 +328,7 @@ def render_page() -> None:
     
     if media_data:
         MemoryBookManager.add_media(patient_id, media_data)
-        st.success(f"Media '{media_data['title']}' uploaded successfully")
+        st.success(f"Memory '{media_data['title']}' uploaded successfully!")
         st.rerun()
     
     st.divider()
