@@ -1,275 +1,130 @@
+# The old code is basically just scafolding and not at all integrated with the database, login system and accessibility features.
+# It would be too much time and effort to go through and change it to work, so I renamed it and am basically rewriting my own tonight, starting at 09/11 22:45 (finished at: 09/11 23:57)
+
 import streamlit as st
-from datetime import  date
+from datetime import date, datetime
 from typing import Dict, Any
-"""
-Dashboard Module
-Main overview page displaying key metrics and quick access to patient information.
+from pathlib import Path
+import sqlite3
 
-This module provides carers with a comprehensive overview of daily priorities,
-including pending tasks, medication schedules, and patient quick access cards.
-"""
+# local imports
+from apply_preferences import apply_preferences, accessibility_settings_panel
+from db import get_connection
 
-class DashboardMetrics:
+
+#   UTILITY FUNCTIONS
+
+
+def get_patient_count(conn):
+    query = "SELECT COUNT(*) FROM Patient WHERE CarerID = ?"
+    result = conn.execute(query, (st.session_state['user_id'],)).fetchone() # I should update this as I updated my db code, on my todo list
+    return result[0] if result else 0
+
+def get_log_count_today(conn):
+    today_str = date.today().isoformat() # sqlite uses isoformat
+    query = "SELECT COUNT(*) FROM Log_Item WHERE AuthorID = ? AND DATE(DateTime) = ?"
+    result = conn.execute(query, (st.session_state['user_id'], today_str)).fetchone()
+    return result[0] if result else 0
+
+def get_patients_for_carer(conn):
+    query = "SELECT PatientID, FirstName, LastName, DementiaStage, ResidenceType FROM Patient WHERE CarerID = ?"
+    return conn.execute(query, (st.session_state['user_id'],)).fetchall()
+
+def get_recent_logs(conn, limit=5):
+    query = """
+    SELECT Log_Item.Content, Log_Item.ContentLvl, Log_Item.DateTime, Patient.FirstName || ' ' || Patient.LastName as PatientName
+    FROM Log_Item
+    JOIN Patient ON Patient.PatientID = Log_Item.PatientID
+    WHERE Patient.CarerID = ?
+    ORDER BY Log_Item.DateTime DESC
+    LIMIT ?
     """
-    Calculates and displays dashboard statistics.
-    """
-    
-    @staticmethod
-    def render() -> None:
-        """Render key metrics in the dashboard header."""
-        col1, col2, col3, col4 = st.columns(4)
-        
-        total_patients = DashboardMetrics._count_total_patients()
-        pending_tasks = DashboardMetrics._count_pending_tasks()
-        today_medications = DashboardMetrics._count_today_medications()
-        today_logs = DashboardMetrics._count_today_logs()
-        
-        with col1:
-            st.metric("Total Patients", total_patients)
-        
-        with col2:
-            st.metric("Pending Tasks", pending_tasks)
-        
-        with col3:
-            st.metric("Today's Medications", today_medications)
-        
-        with col4:
-            st.metric("Logs Today", today_logs)
-    
-    @staticmethod
-    def _count_total_patients() -> int:
-        """
-        Count total number of registered patients.
-        
-        Returns:
-            Number of patients
-        """
-        return len(st.session_state.patients)
-    
-    @staticmethod
-    def _count_pending_tasks() -> int:
-        """
-        Counts total number of pending tasks across all patients.
-        
-        Returns:
-            Number of pending tasks
-        """
-        pending_count = 0
-        for patient_id, task_list in st.session_state.tasks.items():
-            pending_count += sum(
-                1 for task in task_list
-                if not task.get('completed', False)
-            )
-        return pending_count
-    
-    @staticmethod
-    def _count_today_medications() -> int:
-        """
-        Counts total medications scheduled for today.
-
-        """
-        medication_count = 0
-        for patient_id, meds in st.session_state.medications.items():
-            medication_count += len(meds)
-        return medication_count
-    
-    @staticmethod
-    def _count_today_logs() -> int:
-        """
-        Counts the number of logs recorded today.
-        """
-        today = date.today().isoformat()
-        log_count = 0
-        
-        for logs in st.session_state.daily_logs.values():
-            log_count += sum(
-                1 for log in logs
-                if log.get('date') == today
-            )
-        
-        return log_count
+    return conn.execute(query, (st.session_state['user_id'], limit)).fetchall()
 
 
-class TaskOverview:
-    """
-    Displays overview of pending tasks by patient.
-    """
-    
-    @staticmethod
-    def render() -> None:
-        """Render pending tasks overview."""
-        st.subheader("Pending Tasks")
-        
-        if not st.session_state.tasks:
-            st.info("No pending tasks")
-            return
-        
-        has_pending = False
-        
-        for patient_id, task_list in st.session_state.tasks.items():
-            patient_name = st.session_state.patients.get(
-                patient_id, {}
-            ).get('name', 'Unknown')
-            
-            pending_tasks = [
-                task for task in task_list
-                if not task.get('completed', False)
-            ]
-            
-            if pending_tasks:
-                has_pending = True
-                st.write(f"**{patient_name}**")
-                
-                for task in pending_tasks:
-                    priority_emoji = TaskOverview._get_priority_emoji(
-                        task.get('priority', 'Low')
-                    )
-                    task_text = f"{priority_emoji} {task['task']}"
-                    
-                    if task.get('time'):
-                        task_text += f" (at {task['time']})"
-                    
-                    st.write(f"  - {task_text}")
-        
-        if not has_pending:
-            st.info("No pending tasks")
-    
-    @staticmethod
-    def _get_priority_emoji(priority: str) -> str:
-        """
-        Get emoji indicator for task priority.
-        
-        Args:
-            priority: Priority level
-            
-        Returns:
-            Emoji string
-        """
-        priority_emojis = {
-            "Urgent": "🔴",
-            "High": "🟠",
-            "Medium": "🟡",
-            "Low": "🟢"
-        }
-        return priority_emojis.get(priority, "⚪")
+#   PAGE RENDERING
 
 
-class MedicationSchedule:
-    """
-    Displays today's medication schedule by patient.
-    """
-    
-    @staticmethod
-    def render() -> None:
-        """Render medication schedule overview."""
-        st.subheader("Today's Medications")
-        
-        if not st.session_state.medications:
-            st.info("No medications scheduled")
-            return
-        
-        has_medications = False
-        
-        for patient_id, meds in st.session_state.medications.items():
-            patient_name = st.session_state.patients.get(
-                patient_id, {}
-            ).get('name', 'Unknown')
-            
-            active_meds = [
-                med for med in meds
-                if med.get('active', True)
-            ]
-            
-            if active_meds:
-                has_medications = True
-                st.write(f"**{patient_name}**")
-                
-                sorted_meds = sorted(active_meds, key=lambda x: x['time'])
-                
-                for med in sorted_meds:
-                    st.write(
-                        f"  - {med['time']}: {med['name']} ({med['dosage']})"
-                    )
-        
-        if not has_medications:
-            st.info("No medications scheduled")
+def render_dashboard():
+    st.title("Dashboard")
+
+    # Check login status
+    if 'logged_in' not in st.session_state or not st.session_state['logged_in']: # this is also insecure
+        st.warning("Please log in to the access the dashboard")
+        st.switch_page("login.py")
+    if 'carer' not in st.session_state:
+	st.warning("This is for carers only.")
+	st.switch_page(login.py)
+
+    # Apply accessibility preferences
+    apply_preferences()
+    accessibility_settings_panel()
+
+    # Cconnect to the database
+    conn = get_connection()
+
+    # Retrieve metrics
+    total_patients = get_patient_count(conn) # now we should have the dashboard allow us to change which patient we are seeing today
+    today_logs = get_log_count_today(conn)
+
+    # Placeholder metrics for the TODO tables
+    pending_tasks = 0
+    today_medication = 0
 
 
-class PatientQuickAccess:
-    """
-    Displays patient cards for quick access to patient information.
-    """
-    
-    @staticmethod
-    def render() -> None:
-        """
-        """
-        st.subheader("Quick Patient Access")
-        
-        if not st.session_state.patients:
-            st.info("No patients registered yet. Add a patient to get started.")
-            if st.button("Add Patient"):
-                st.switch_page("pages/add_patient.py")
-            return
-        
-        cols = st.columns(3)
-        
-        for idx, (patient_id, patient) in enumerate(
-            st.session_state.patients.items()
-        ):
-            with cols[idx % 3]:
-                PatientQuickAccess._render_patient_card(patient_id, patient)
-    
-    @staticmethod
-    def _render_patient_card(patient_id: str, patient: Dict[str, Any]) -> None:
-        """
-        """
-        with st.container(border=True):
-            st.write(f"**{patient['name']}**")
-            st.write(f"ID: {patient.get('patient_id_number', 'N/A')}")
-            st.write(f"Age: {patient['age']}")
-            st.write(f"Room: {patient.get('room', 'N/A')}")
-            
-            if st.button(
-                "View Details",
-                key=f"view_{patient_id}",
-                use_container_width=True
-            ):
-                st.session_state.current_patient = patient_id
-                st.switch_page("pages/daily_logs.py")
+    # Dashboard Metrics
+    st.markdown("### Key Metrics")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Patients", total_patients)
+    col2.metric("Pending Tasks", pending_tasks)
+    col3.metric("Today's Medications", today_medication)
+    col4.metric("Logs Today", today_logs)
+
+    st.divider()
+
+    # Patient Quick Access
+    st.subheader("Patient Quick Access")
+    patients = get_patients_for_carer(conn)
+    if not patients:
+        st.info("No patients registered yet. Add a patient to get started.")
+        if st.button("Add Patient"):
+            st.switch_page("pages/add_patient.py")
+        conn.close()
+        return
+
+    cols = st.columns(3)
+    for idx, patient in enumerate(patients):
+        with cols[idx % 3]:
+            with st.container(border=True):
+                st.markdown(f"**{patient['FirstName']} {patient['LastName']}**")
+                st.caption(f"Stage: {patient['DementiaStage']} | Residence: {patient['ResidenceType']}")
+                if st.button("View Details", key=f"view_{patient['PatientID']}", use_container_width=True):
+                    st.session_state['current_patient'] = patient['PatientID']
+                    st.switch_page("pages/patient_details.py") # TODO Add this page ig
+
+    st.divider()
+
+    # RECENT LOG ENTRIES
+    st.subheader("Recent Logs")
+
+    logs = get_recent_logs(conn)
+    if not logs:
+        st.info("No logs have been recorded yet.")
+    else:
+        for log in logs:
+            with st.container(border=True):
+                st.write(f"**{log['PatientName']}** - {log['ContentLvl'].capitalize()}")
+                st.write(log['Content'])
+                st.caption(datetime.strptime(log['DateTime'], '%Y-%m-%d %H:%M:%S'.strftime('%d%b%y, %H:%M')))
+
+    conn.close()
 
 
-class DashboardLayoutManager:
-    """
-    Manages the overall dashboard layout and component arrangement.
-    """
-    
-    @staticmethod
-    def render() -> None:
-        """"""
-        st.title("Dashboard")
-        
-        DashboardMetrics.render()
-        
-        st.divider()
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            TaskOverview.render()
-        
-        with col2:
-            MedicationSchedule.render()
-        
-        st.divider()
-        
-        PatientQuickAccess.render()
+# ENTRY
 
 
-def render_page() -> None:
-    """Main function to start the Dashboard page."""
-    DashboardLayoutManager.render()
-
+def render_page():
+    render_dashboard()
 
 if __name__ == "__main__":
     render_page()

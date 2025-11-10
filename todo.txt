@@ -1,0 +1,47 @@
+
+
+We don't have a medication table only a log
+
+Design considerations:
+	move the sidebar stuff to the very bottom of the page, we could probably make a sticky to do it for us
+
+
+Pending tasks:
+	make a table for it
+	make some functions like get_pending_task_count or get_pending_tasks_by_patientID
+	put these functions in their respective pages
+
+Medication:
+	make a medication table, even if it is handled nicely by a calender system we still need a place to store it
+	add functions like get_todays_medication_count or get_todays_medication_by_patientID
+
+
+
+There will be more to do but I am only focusing on the Dashboard for now and we can move outwards from there
+
+Tables to add:
+	pending tasks
+	medication
+	todo
+	notification	- For family members
+	reminder	- For carers
+
+Database related:
+	Update the sql functions to use the proper db.py functions rather than just conn.execute
+	The idea of Incremented UIDs is nice but also if stored in session data you could just increment your own ID and pretend to be someone else, so it is a security issue perhaps? We should think of something better to do
+	to notify the family I will need to:
+		In carers log page they should have a button which sends the message when a log is made
+		select familymemberID(s) -> insert into notification familymemberID, Message
+		
+		
+
+login:
+	the checker for the login just uses the session_state boolean to check if you are logged in and doesn't do any verifying at all
+	login page is a prototype so very barebones
+	Important Note: I discovered that every "cookie" or "cache" is serverside so kind of impossible for a client to manipulate it, so session state is tied to the user's "session token" which is what a client sees.
+
+handling multiple patients:
+	It is worth noting that due to trying to keep with the previous design the dashboard now handles multiple patients in a sense, we should seperate this somehow
+
+Accessibility:
+	Maybe a reset button?
