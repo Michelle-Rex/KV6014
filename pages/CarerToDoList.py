@@ -3,16 +3,24 @@ import streamlit as st
 def main():
     st.title("To Do List")
 
-    st.button("Create New Task", type = "secondary", on_click=makeTaskMenu())
+    st.button("Create New Task", type = "secondary", on_click=makeNewTask())
 
 
-def makeTaskMenu():
+def makeNewTask():
     st.subheader("New Task")
     col1 = st.beta_columns(2)
 
     with col1:
-        task = st.text_area("Task")
-        
+        task = st.text_area("Task")        
 
     if st.button("Add To List"):
         st.success("Task Added")
+
+def showToDoList():
+    pass
+
+def deleteTask():
+    pass
+
+def editTask():
+    pass
