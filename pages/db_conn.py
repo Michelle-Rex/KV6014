@@ -12,9 +12,13 @@ def add_to_task(task: object):
 
 
 def delete_from_task():
-    pass
+    #unfinished
+    cur.execute(f"DELETE FROM Task WHERE TaskID = ")
 
 def view_patient_tasks():
+    #unfinished
     #need to get current session's patient ID 
     #patientId = currentPatient.getPatientID()
-    data = cur.execute(f'SELECT Title, Description, DueDate, Completed FROM Task WHERE PatientID =')
+    cur.execute(f'SELECT Title, Description, DueDate, Completed FROM Task WHERE PatientID =')
+    data = cur.fetchall()
+    return data

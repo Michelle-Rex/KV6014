@@ -1,5 +1,6 @@
 import streamlit as st
 import CarerToDoListClass as toDo
+import db_conn
 
 def main():
     st.title("To Do List")
@@ -23,6 +24,9 @@ def makeNewTask():
         st.success("Task Added")
 
 def showToDoList():
+    #get data from db
+    #make task instance (to allow for functionality, like checking tasks as complete)
+    #make a task element with the check box and everything for each returned tuple from db
     pass
 
 def deleteTask():
