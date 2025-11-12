@@ -4,19 +4,31 @@ import datetime
 #this file is the classes used for the To Do List feature
 
 class Task:
-    def __init__(self, task): #constructor
-        self.task = task
+    def __init__(self, task_name, task_desc, dueDate: datetime): #constructor
+        self.task_name = task_name
+        self.task_desc = task_desc
+        self.dueDate = dueDate
         self.task_id = ""
         self.isComplete = False
-        self.date_complete = ""
-        self.time_complete = ""
+        self.dateTime_complete = ""
 
-    #getters and setters
-    def getTask(self): 
-        return self.task
+    #get/set task name
+    def getTaskName(self): 
+        return self.task_name
     
-    def setTask(self, task):
-        self.task = task
+    def setTaskName(self, task):
+        self.task_name = task
+
+    #get/set task description
+    def getTaskDesc(self):
+        return self.task_desc
+    
+    def setTaskDesc(self, desc):
+        self.task_desc = desc
+
+    #get/set task due date
+    def setdueDate(self):
+        return self.dueDate
 
     def getID(self):
         return self.task_id
