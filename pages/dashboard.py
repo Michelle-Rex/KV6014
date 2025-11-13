@@ -10,7 +10,7 @@ import sqlite3
 # local imports
 from apply_preferences import apply_preferences, accessibility_settings_panel
 from db import get_connection
-
+from topbar import top_navigation
 
 #   UTILITY FUNCTIONS
 
@@ -47,18 +47,19 @@ def get_recent_logs(conn, limit=5):
 
 def render_dashboard():
     st.title("Dashboard")
-
     # Check login status
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']: # this is also insecure
         st.warning("Please log in to the access the dashboard")
         st.switch_page("login.py")
-    if 'carer' not in st.session_state:
-	st.warning("This is for carers only.")
-	st.switch_page(login.py)
+    if st.session_state['role'] != 'carer':
+        st.warning("This is for carers only.")
+        st.switch_page(login.py)
+
+    top_navigation()
 
     # Apply accessibility preferences
     apply_preferences()
-    accessibility_settings_panel()
+    ##accessibility_settings_panel()
 
     # Cconnect to the database
     conn = get_connection()
