@@ -18,13 +18,10 @@ def delete_from_task(taskID: int):
     conn.commit()
     print("task deleted")
 
-def view_patient_tasks():
-    #unfinished
-    #need to get current session's patient ID 
-    #patientId = currentPatient.getPatientID()
-    cur.execute(f'SELECT Title, Description, DueDate, Completed FROM Task WHERE PatientID =')
-    data = cur.fetchall()
-    return data
+def view_patient_tasks(patientID: int):
+    for row in cur.execute(f'SELECT Title, Description, DueDate, Completed FROM Task WHERE PatientID = {patientID}'):
+        print(row) #need to make this a proper output
+
 
 def edit_task(taskID: int):
     pass
