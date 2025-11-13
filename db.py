@@ -23,4 +23,3 @@ def execute_db(query, args=()):
     conn.execute(query, args)
     conn.commit()
     conn.close()
-
