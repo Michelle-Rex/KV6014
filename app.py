@@ -28,7 +28,8 @@ pages = {
     "Records": [
         st.Page("pages/carer/historical_logs.py", title="Historical Logs"),
         st.Page("pages/carer/memory_book.py", title="Memory Book"),
-    ]
+    ],
+    "Settings": [st.Page("pages/carer/historical_logs.py", title="Settings")]
 }
 
 pg = st.navigation(pages, position="sidebar")
