@@ -12,7 +12,7 @@ def get_connection():
     return conn
 
 def query_db(query, args=(), one=False):
-    conn = gen_connection()
+    conn = get_connection()
     cur = conn.execute(query, args)
     rows = cur.fetchall()
     conn.close()
