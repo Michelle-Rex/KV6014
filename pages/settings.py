@@ -4,7 +4,7 @@ import streamlit as st
 
 from db import execute_db
 from apply_preferences import apply_preferences, accessibility_settings_panel
-from topbar import top_navigation
+#from topbar import top_navigation
 
 def update_user_details(user_id, new_name, new_email):
     first, last = new_name.split(" ", 1)
@@ -18,7 +18,7 @@ def render_page():
         return
 
     apply_preferences()
-    top_navigation()
+    #top_navigation()
 
     st.title("Settings")
 

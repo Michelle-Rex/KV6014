@@ -10,7 +10,7 @@ import sqlite3
 # local imports
 from apply_preferences import apply_preferences, accessibility_settings_panel
 from db import get_connection
-from topbar import top_navigation
+#from topbar import top_navigation
 
 #   UTILITY FUNCTIONS
 
@@ -55,7 +55,7 @@ def render_dashboard():
         st.warning("This is for carers only.")
         st.switch_page(login.py)
 
-    top_navigation()
+    #top_navigation()
 
     # Apply accessibility preferences
     apply_preferences()

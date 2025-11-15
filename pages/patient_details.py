@@ -5,7 +5,7 @@ from datetime import datetime
 
 from db import get_connection, execute_db
 from apply_preferences import apply_preferences
-from topbar import top_navigation
+#from topbar import top_navigation
 
 
 def get_patient_details(patient_id):
@@ -60,7 +60,7 @@ def render_page():
 
     apply_preferences()
     #accessibility_settings_panel()
-    top_navigation()
+    #top_navigation()
 
     user_role = st.session_state["role"]
     patient_id = st.session_state["current_patient"]

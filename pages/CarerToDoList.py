@@ -5,7 +5,7 @@ from datetime import date
 
 from db import get_connection, execute_db
 from apply_preferences import apply_preferences
-from topbar import top_navigation
+#from topbar import top_navigation
 
 
 from CarerToDoListClass import Task
@@ -18,6 +18,7 @@ def get_tasks_for_patient(patient_id):
         (patient_id,),
     ).fetchall()
     conn.close()
+    print(rows)
     return rows
 
 
@@ -25,14 +26,17 @@ def add_task(patient_id, title, desc, due_date):
     execute_db(
         "INSERT INTO Task (PatientID, Title, Description, DueDate, Completed) VALUES (?, ?, ?, ?, 0)",
         (patient_id, title, desc, due_date),)
+    print("task added successfully")
 
 
 def mark_task_complete(task_id, complete=True):
     execute_db("UPDATE Task SET Completed = ? WHERE TaskID = ?", (1 if complete else 0, task_id))
+    print("task complete")
 
 
 def delete_task(task_id):
     execute_db("DELETE FROM Task WHERE TaskID = ?", (task_id,))
+    print("task deleted")
 
 
 def render_page():
@@ -48,7 +52,7 @@ def render_page():
         return
 
     apply_preferences()
-    top_navigation()
+    #top_navigation()
 
     st.title("Carer To-Do List")
 
