@@ -116,7 +116,7 @@ def render_dashboard():
             with st.container(border=True):
                 st.write(f"**{log['PatientName']}** - {log['ContentLvl'].capitalize()}")
                 st.write(log['Content'])
-                st.caption(datetime.strptime(log['DateTime'], '%Y-%m-%d %H:%M:%S'.strftime('%d%b%y, %H:%M')))
+                st.caption(datetime.strptime(log['DateTime'], '%Y-%m-%d %H:%M:%S'))
 
     conn.close()
 
