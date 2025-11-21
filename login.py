@@ -27,6 +27,10 @@ if st.button("Login"):
         st.session_state["role"] = user[3]
 
         st.success(f"Welcome back, {user[1]} ({user[3]})!")
-        st.switch_page("pages/dashboard.py")
+        if (user[3] == 1):
+            st.switch_page("pages/carer/dashboard.py")
+        elif (user[3] == 2):
+            st.switch_page("pages/family/dashboard.py")
+        
     else:
         st.error("Invalid email or password.")
