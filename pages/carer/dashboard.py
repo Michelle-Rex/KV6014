@@ -28,6 +28,7 @@ with col1:
     
     patients = db.get_all_patients()
     has_tasks = False
+    checkID = 0
     for patient in patients:
         tasks = db.get_patient_tasks(patient['patient_id'])
         pending = [t for t in tasks if not t['completed']]
@@ -42,6 +43,8 @@ with col1:
                 elif task['priority'] == 'High':
                     priority_mark = "[HIGH] "
                 st.write(f"  - {priority_mark}{task['task_name']}")
+                st.checkbox("complete", key = checkID, label_visibility="hidden")
+                checkID += 1
     
     if not has_tasks:
         st.info("No pending tasks")
