@@ -43,7 +43,9 @@ with col1:
                 elif task['priority'] == 'High':
                     priority_mark = "[HIGH] "
                 st.write(f"  - {priority_mark}{task['task_name']}")
-                st.checkbox("complete", key = checkID, label_visibility="hidden")
+
+                isComplete = st.checkbox("complete", key = checkID, label_visibility="hidden")
+                db.update_task_completion(task['task_id'], isComplete, )
                 checkID += 1
     
     if not has_tasks:
