@@ -718,18 +718,6 @@ class Database:
         conn.close()
         return True
     
-    def markTaskComplete(self, task_id: int):
-        conn = self.get_connection()
-        conn.execute(f"UPDATE Task SET Complete = 1 WHERE TaskID = {task_id}")
-        conn.commit()
-        conn.close()
-
-    def markTaskIncomplete(self, task_id: int):
-        conn = self.get_connection()
-        conn.execute(f"UPDATE Task SET Complete = 0 WHERE TaskID = {task_id}")
-        conn.commit()
-        conn.close()
-    
     def get_patient_medications(self, patient_id: int, active_only: bool = True) -> List[Dict]:
         conn = self.get_connection()
         cursor = conn.cursor()
