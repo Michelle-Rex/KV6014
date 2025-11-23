@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import date
-from apply_preferences import apply_preferences
 
 st.title("Dashboard")
 db = st.session_state.db

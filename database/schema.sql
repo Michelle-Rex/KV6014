@@ -203,3 +203,12 @@ CREATE TABLE IF NOT EXISTS MemoryBook (
 );
 
 INSERT OR IGNORE INTO Role (RoleName) VALUES ('carer'), ('family_member');
+
+CREATE TABLE IF NOT EXISTS UserPreferences (
+    PreferenceID INTEGER PRIMARY KEY AUTOINCREMENT,
+    UserID INTEGER NOT NULL UNIQUE,
+    Theme TEXT CHECK (Theme IN ('light', 'dark')) DEFAULT 'light',
+    FontSize TEXT CHECK (FontSize IN ('small', 'medium', 'large', 'x-large')) DEFAULT 'medium',
+    HighContrast INTEGER DEFAULT 0 CHECK (HighContrast IN (0, 1)),
+    FOREIGN KEY (UserID) REFERENCES User(UserID) ON DELETE CASCADE
+);

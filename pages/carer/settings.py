@@ -1,74 +1,166 @@
-# Settings Page
 import streamlit as st
+from utils.accessibility import apply_accessibility_css
 
+# Check authentication
+if 'logged_in' not in st.session_state or not st.session_state.logged_in:
+    st.error("Please log in to access this page.")
+    st.stop()
 
-from db import execute_db
-from apply_preferences import apply_preferences, accessibility_settings_panel
-from topbar import top_navigation
+# Get database instance
+db = st.session_state.get('db')
+if not db:
+    st.error("Database connection error.")
+    st.stop()
+user_prefs = db.get_user_preferences(st.session_state.user_id)
 
-def update_user_details(user_id, new_name, new_email):
-    first, last = new_name.split(" ", 1)
-    execute_db("UPDATE User SET FirstName=?, LastName=?, Email=? WHERE UserID=?",
-               (first, last, new_email, user_id))
+# Apply current preferences (will be re-applied when page loads from app.py, but good to have here too)
+apply_accessibility_css(user_prefs['theme'], user_prefs['font_size'], user_prefs['high_contrast'])
 
-def render_page():
-    if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
-        st.warning("Please log in first.")
-        st.switch_page("login.py")
-        return
+st.title("Settings")
+st.header("Profile Information")
 
-    apply_preferences()
-    top_navigation()
-
-    st.title("Settings")
-
-    st.subheader("Profile Information")
-    new_name = st.text_input("Full Name", f"{st.session_state['user_name']}")
-    new_email = st.text_input("Email", "")
-    if st.button("Update Profile", key="update_profile", use_container_width=True):
-        if new_name.strip() and new_email.strip():
-            update_user_details(st.session_state["user_id"], new_name, new_email)
-            st.success("Profile updated successfully.")
+with st.form("profile_form"):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        first_name = st.text_input(
+            "First Name", 
+            value=st.session_state.get('user_name', ''),
+            help="Your first name"
+        )
+    
+    with col2:
+        last_name = st.text_input(
+            "Last Name",
+            value=st.session_state.get('user_last_name', ''),
+            help="Your last name"
+        )
+    
+    # Get current email from database
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT Email FROM User WHERE UserID = ?", (st.session_state.user_id,))
+    current_email = cursor.fetchone()[0]
+    conn.close()
+    
+    email = st.text_input(
+        "Email Address",
+        value=current_email,
+        help="Your email address for login"
+    )
+    
+    submit_profile = st.form_submit_button("Update Profile", use_container_width=True)
+    
+    if submit_profile:
+        if not first_name.strip() or not last_name.strip() or not email.strip():
+            st.error("All fields are required.")
         else:
-            st.warning("Please fill all fields.")
+            success = db.update_user_profile(
+                st.session_state.user_id,
+                first_name.strip(),
+                last_name.strip(),
+                email.strip()
+            )
+            
+            if success:
+                st.session_state.user_name = first_name.strip()
+                st.session_state.user_last_name = last_name.strip()
+                st.success("Profile updated successfully!")
+            else:
+                st.error("Failed to update profile. Please try again.")
 
-    st.divider()
+st.divider()
 
-    st.subheader("Accessibility Options")
-    with st.container(border=True):
+# Accessibility Settings Section
+st.header("Accessibility Settings")
+
+st.markdown("""
+Customize your experience with these accessibility options. 
+Changes will be saved and applied across all your sessions.
+""")
+
+with st.form("accessibility_form"):
+    col1, col2 = st.columns(2)
+    
+    with col1:
         theme_choice = st.radio(
             "Theme",
-            ["light", "dark"],
-            index=0 if st.session_state.get("theme", "light") == "light" else 1,
-            horizontal=True
+            options=["light", "dark"],
+            index=0 if user_prefs['theme'] == "light" else 1,
+            horizontal=True,
+            help="Choose your preferred color theme"
         )
-
+        
         font_choice = st.select_slider(
             "Font Size",
             options=["small", "medium", "large", "x-large"],
-            value=st.session_state.get("font_size", "medium")
+            value=user_prefs['font_size'],
+            help="Adjust text size for better readability"
         )
-
+    
+    with col2:
         high_contrast_choice = st.toggle(
             "High Contrast Mode",
-            value=st.session_state.get("high_contrast", False)
+            value=user_prefs['high_contrast'],
+            help="Enable high contrast for better visibility"
         )
-
-        if st.button("Apply Accessibility Preferences", use_container_width=True, type="primary"):
-            st.session_state["theme"] = theme_choice
-            st.session_state["font_size"] = font_choice
-            st.session_state["high_contrast"] = high_contrast_choice
-            apply_preferences()
-            st.success("Accessibility preferences updated.")
+        
+        # Preview box
+        st.info(f"""
+        **Current Settings:**
+        - Theme: {theme_choice.title()}
+        - Font: {font_choice.title()}
+        - High Contrast: {'Enabled' if high_contrast_choice else 'Disabled'}
+        """)
+    
+    submit_accessibility = st.form_submit_button(
+        "Save Accessibility Settings", 
+        use_container_width=True,
+        type="primary"
+    )
+    
+    if submit_accessibility:
+        success = db.save_user_preferences(
+            st.session_state.user_id,
+            theme_choice,
+            font_choice,
+            high_contrast_choice
+        )
+        
+        if success:
+            st.success("Accessibility settings saved! Refreshing page...")
             st.rerun()
+        else:
+            st.error("Failed to save settings. Please try again.")
 
-    st.divider()
+st.divider()
 
-    st.subheader("Logout")
-    if st.button("Logout", key="logout_button", use_container_width=True):
-        st.session_state.clear()
-        st.success("Logged out successfully.")
-        st.switch_page("login.py")
+# Account Actions Section
+st.header("Account Actions")
 
-if __name__ == "__main__":
-    render_page()
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("### Change Password")
+    st.info("Password change feature not available!")
+    # TODO: Implement password change functionality
+
+with col2:
+    st.markdown("### Logout")
+    st.markdown("End your current session and return to the login page.")
+    
+    if st.button("Logout", use_container_width=True, type="secondary"):
+        # Clear all session state
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.success("Logged out successfully!")
+        st.rerun()
+
+st.divider()
+
+# Footer info
+st.caption(f"""
+**User:** {st.session_state.get('user_name', '')} {st.session_state.get('user_last_name', '')}  
+**Role:** {st.session_state.get('role', '').replace('_', ' ').title()}  
+**User ID:** {st.session_state.get('user_id', 'N/A')}
+""")

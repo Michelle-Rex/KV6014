@@ -805,6 +805,305 @@ class Database:
         
         conn.close()
         return patients
+    
+    def get_user_preferences(self, user_id: int) -> Optional[Dict]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('SELECT * FROM UserPreferences WHERE UserID = ?', (user_id,))
+            row = cursor.fetchone()
+            
+            if not row:
+                # Return default preferences
+                return {
+                    'theme': 'light',
+                    'font_size': 'medium',
+                    'high_contrast': False
+                }
+            
+            return {
+                'theme': row['Theme'],
+                'font_size': row['FontSize'],
+                'high_contrast': bool(row['HighContrast'])
+            }
+        except Exception as e:
+            logger.error(f"Error getting user preferences: {e}", exc_info=True)
+            return {
+                'theme': 'light',
+                'font_size': 'medium',
+                'high_contrast': False
+            }
+        finally:
+            if conn:
+                conn.close()
+    
+    def save_user_preferences(self, user_id: int, theme: str, font_size: str, high_contrast: bool) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Check if preferences exist
+            cursor.execute('SELECT PreferenceID FROM UserPreferences WHERE UserID = ?', (user_id,))
+            exists = cursor.fetchone()
+            
+            if exists:
+                # Update existing preferences
+                cursor.execute('''
+                    UPDATE UserPreferences 
+                    SET Theme = ?, FontSize = ?, HighContrast = ?
+                    WHERE UserID = ?
+                ''', (theme, font_size, 1 if high_contrast else 0, user_id))
+            else:
+                # Insert new preferences
+                cursor.execute('''
+                    INSERT INTO UserPreferences (UserID, Theme, FontSize, HighContrast)
+                    VALUES (?, ?, ?, ?)
+                ''', (user_id, theme, font_size, 1 if high_contrast else 0))
+            
+            conn.commit()
+            logger.info(f"User preferences saved for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving user preferences: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
+            return False
+        finally:
+            if conn:
+                conn.close()
+    
+    def update_user_profile(self, user_id: int, first_name: str, last_name: str, email: str) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE User 
+                SET FirstName = ?, LastName = ?, Email = ?
+                WHERE UserID = ?
+            ''', (first_name, last_name, email, user_id))
+            
+            conn.commit()
+            logger.info(f"User profile updated for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user profile: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+        
+    def get_user_notifications(self, user_id: int, unread_only: bool = False) -> List[Dict]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            query = "SELECT * FROM Notification WHERE UserID = ?"
+            if unread_only:
+                query += " AND ReadFlag = 0"
+            query += " ORDER BY CreatedAt DESC"
+            
+            cursor.execute(query, (user_id,))
+            notifications = []
+            
+            for row in cursor.fetchall():
+                notifications.append({
+                    'notification_id': row['NotificationID'],
+                    'type': row['Type'],
+                    'message': row['Message'],
+                    'created_at': row['CreatedAt'],
+                    'read': bool(row['ReadFlag'])
+                })
+            
+            return notifications
+        except Exception as e:
+            logger.error(f"Error getting notifications: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()
+    
+    def create_notification(self, user_id: int, notification_type: str, message: str) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO Notification (UserID, Type, Message)
+                VALUES (?, ?, ?)
+            ''', (user_id, notification_type, message))
+            
+            conn.commit()
+            logger.info(f"Notification created for user {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error creating notification: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
+            return False
+        finally:
+            if conn:
+                conn.close()
+    
+    def mark_notification_read(self, notification_id: int) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE Notification 
+                SET ReadFlag = 1 
+                WHERE NotificationID = ?
+            ''', (notification_id,))
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error marking notification as read: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
+            return False
+        finally:
+            if conn:
+                conn.close()
+    
+    def mark_all_notifications_read(self, user_id: int) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                UPDATE Notification 
+                SET ReadFlag = 1 
+                WHERE UserID = ? AND ReadFlag = 0
+            ''', (user_id,))
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error marking all notifications as read: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
+            return False
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_messages_for_patient(self, patient_id: int, user_id: int) -> List[Dict]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            # Get messages where user is sender or recipient, for this patient
+            cursor.execute('''
+                SELECT m.MessageID, m.FromUserID, m.ToUserID, m.PatientID, 
+                       m.Content, m.ImagePath, m.Timestamp,
+                       u1.FirstName as FromFirstName, u1.LastName as FromLastName,
+                       u2.FirstName as ToFirstName, u2.LastName as ToLastName
+                FROM Message m
+                JOIN User u1 ON m.FromUserID = u1.UserID
+                JOIN User u2 ON m.ToUserID = u2.UserID
+                WHERE m.PatientID = ? AND (m.FromUserID = ? OR m.ToUserID = ?)
+                ORDER BY m.Timestamp ASC
+            ''', (patient_id, user_id, user_id))
+            
+            messages = []
+            for row in cursor.fetchall():
+                messages.append({
+                    'message_id': row['MessageID'],
+                    'from_user_id': row['FromUserID'],
+                    'to_user_id': row['ToUserID'],
+                    'patient_id': row['PatientID'],
+                    'content': row['Content'],
+                    'image_path': row['ImagePath'],
+                    'timestamp': row['Timestamp'],
+                    'from_name': f"{row['FromFirstName']} {row['FromLastName']}",
+                    'to_name': f"{row['ToFirstName']} {row['ToLastName']}",
+                    'is_sent_by_me': row['FromUserID'] == user_id
+                })
+            
+            return messages
+        except Exception as e:
+            logger.error(f"Error getting messages: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_family_members_for_carer_patients(self, carer_id: int) -> List[Dict]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT DISTINCT u.UserID, u.FirstName, u.LastName, u.Email,
+                       p.PatientID, p.FirstName as PatientFirstName, p.LastName as PatientLastName,
+                       fm.ContentAccessLvl
+                FROM Patient p
+                JOIN Family_Member fm ON p.PatientID = fm.PatientID
+                JOIN User u ON fm.UserID = u.UserID
+                WHERE p.CarerID = ?
+                ORDER BY p.PatientID, u.LastName
+            ''', (carer_id,))
+            
+            family_members = []
+            for row in cursor.fetchall():
+                family_members.append({
+                    'user_id': row['UserID'],
+                    'first_name': row['FirstName'],
+                    'last_name': row['LastName'],
+                    'full_name': f"{row['FirstName']} {row['LastName']}",
+                    'email': row['Email'],
+                    'patient_id': row['PatientID'],
+                    'patient_name': f"{row['PatientFirstName']} {row['PatientLastName']}",
+                    'access_level': row['ContentAccessLvl']
+                })
+            
+            return family_members
+        except Exception as e:
+            logger.error(f"Error getting family members: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()
+    
+    def send_message(self, from_user_id: int, to_user_id: int, patient_id: int, 
+                     content: str, image_path: str = None) -> Optional[int]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO Message (FromUserID, ToUserID, PatientID, Content, ImagePath)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (from_user_id, to_user_id, patient_id, content, image_path))
+            
+            message_id = cursor.lastrowid
+            conn.commit()
+            logger.info(f"Message sent from user {from_user_id} to user {to_user_id}")
+            return message_id
+        except Exception as e:
+            logger.error(f"Error sending message: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
+            return None
+        finally:
+            if conn:
+                conn.close()
 
 
 if __name__ == "__main__":
