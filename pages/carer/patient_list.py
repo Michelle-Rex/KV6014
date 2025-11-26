@@ -1,5 +1,15 @@
 import streamlit as st
 
+
+if 'logged_in' not in st.session_state or not st.session_state.logged_in:
+    st.error("Please log in to access this page.")
+    st.stop()
+
+if st.session_state.get('role') != 'carer':
+    st.error("Access Denied: This page is only accessible to carers.")
+    st.stop()
+
+
 st.title("Patient List")
 db = st.session_state.db
 
@@ -33,8 +43,7 @@ else:
         with st.container(border=True):
             col1, col2, col3 = st.columns([2, 2, 1])
             with col1:
-                st.write(f"**ID: {patient['patient_number']}**")
-                st.write(f"{patient['first_name']} {patient['last_name']}")
+                st.write(f"**ID: {patient['patient_number']}** | {patient['first_name']} {patient['last_name']}")
                 age = "N/A"
                 if patient.get('date_of_birth'):
                     try:
@@ -44,6 +53,7 @@ else:
                         age = "N/A"
                 st.write(f"Age: {age}")
                 st.write(f"Room: {patient.get('room_number') or 'N/A'}")
+                st.write(f"Type: {patient.get('dementia_type') or 'N/A'}")
             with col2:
                 st.write("Emergency Contact:")
                 if patient.get('emergency_contacts'):

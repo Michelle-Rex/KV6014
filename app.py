@@ -2,6 +2,7 @@ import streamlit as st
 import hashlib # we may need this in future :P
 from database.db_manager import Database
 from utils.accessibility import load_and_apply_preferences
+from utils.notifications import show_notifications_banner
 
 st.set_page_config(
     page_title="Dementia Care Manager",
@@ -71,11 +72,19 @@ if not st.session_state.logged_in:
 # Load and apply user's accessibility preferences
 load_and_apply_preferences(st.session_state.db, st.session_state.user_id)
 
+# Show notification banners at the top of the page
+show_notifications_banner(st.session_state.db, st.session_state.user_id)
+
 # Display user info in sidebar
 st.sidebar.title("Dementia Care Manager")
 if 'user_name' in st.session_state:
     st.sidebar.write(f"**User:** {st.session_state.user_name}")
     st.sidebar.write(f"**Role:** {st.session_state.role.replace('_', ' ').title()}")
+    
+    # Show unread notification count
+    unread_count = len(st.session_state.db.get_user_notifications(st.session_state.user_id, unread_only=True))
+    if unread_count > 0:
+        st.sidebar.info(f"{unread_count} unread notification{'s' if unread_count != 1 else ''}")
     
     # Add logout button
     if st.sidebar.button("Logout"):
@@ -115,6 +124,16 @@ elif st.session_state.get('role') == 'family_member':
     pages = {
         "Dashboard": [
             st.Page("pages/family/dashboard.py", title="Dashboard", default=True),
+        ],
+        "Communication": [
+            st.Page("pages/family/notifications.py", title="Notifications"),
+            st.Page("pages/family/messages.py", title="Messages"),
+        ],
+        "Patient Information": [
+            st.Page("pages/family/patient_info.py", title="My Loved Ones"),
+        ],
+        "Settings": [
+            st.Page("pages/family/settings.py", title="Settings")
         ]
     }
 else:

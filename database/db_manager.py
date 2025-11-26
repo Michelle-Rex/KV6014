@@ -187,6 +187,7 @@ class Database:
                     'gender': row['Gender'],
                     'room_number': row['RoomNumber'],
                     'dementia_stage': row['DementiaStage'],
+                    'dementia_type': row['DementiaType'], 
                     'gp_name': row['GPName'],
                     'gp_phone': row['GPPhone'],
                     'gp_practice': row['GPPractice'],

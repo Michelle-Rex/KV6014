@@ -2,8 +2,13 @@ import streamlit as st
 from utils.accessibility import apply_accessibility_css
 
 # Check authentication
+
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     st.error("Please log in to access this page.")
+    st.stop()
+
+if st.session_state.get('role') != 'carer':
+    st.error("Access Denied: This page is only accessible to carers.")
     st.stop()
 
 # Get database instance

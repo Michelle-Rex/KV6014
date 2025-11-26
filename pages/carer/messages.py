@@ -1,14 +1,15 @@
 import streamlit as st
 from datetime import datetime
 
-# Check authentication
+
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
     st.error("Please log in to access this page.")
     st.stop()
 
 if st.session_state.get('role') != 'carer':
-    st.error("This page is only accessible to carers.")
+    st.error("Access Denied: This page is only accessible to carers.")
     st.stop()
+
 
 # Get database instance
 db = st.session_state.get('db')
@@ -135,7 +136,7 @@ else:
                     <div style='text-align: right; margin: 10px 0;'>
                         <div style='display: inline-block; background-color: #DCF8C6; padding: 10px 15px; 
                                     border-radius: 15px; max-width: 70%; text-align: left;'>
-                            <div style='font-size: 14px;'>{msg['content']}</div>
+                            <div style='font-size: 14px; color: rgb(102, 102, 102)'>{msg['content']}</div>
                             <div style='font-size: 11px; color: #666; margin-top: 5px;'>{time_str}</div>
                         </div>
                     </div>
