@@ -102,6 +102,7 @@ if st.session_state.get('role') == 'carer':
             st.Page("pages/carer/daily_logs.py", title="Daily Logs"),
             st.Page("pages/carer/medications.py", title="Medications"),
             st.Page("pages/carer/tasks.py", title="Tasks"),
+            st.Page("pages/carer/communication_guide.py", title="Communication Guide"), 
         ],
         "Records": [
             st.Page("pages/carer/historical_logs.py", title="Historical Logs"),

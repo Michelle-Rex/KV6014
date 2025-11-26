@@ -158,6 +158,19 @@ def init_db():
         (3, 'Lunch', '100%', 700, 400),
         (4, 'Breakfast', '25%', 200, 100)
     """)
+
+    conn.execute("""
+    INSERT INTO CommunicationTopics (PatientID, Topic, TopicType, Notes, AddedBy)
+    VALUES
+    (1, 'Her garden and flowers', 'positive', 'Loves talking about roses and tulips from her garden', 1),
+    (1, 'Grandchildren', 'positive', 'Very proud of her grandchildren, especially Emma who visits often', 1),
+    (2, 'Her late husband', 'avoid', 'Gets very sad and tearful when discussing her deceased husband', 1),
+    (2, 'Baking recipes', 'positive', 'Enjoys sharing recipes from her youth, especially bread making', 1),
+    (3, 'Moving to care home', 'avoid', 'Feels abandoned by family, becomes agitated', 1),
+    (3, 'War memories', 'avoid', 'Becomes anxious and distressed when discussing wartime', 1),
+    (4, 'His dog Max', 'positive', 'Loves looking at photos of his old dog, calms him down', 1),
+    (4, 'Teaching career', 'positive', 'Proud of 30 years as a primary school teacher', 1)
+""")
     
     
     

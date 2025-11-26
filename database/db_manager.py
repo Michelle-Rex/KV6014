@@ -1106,6 +1106,85 @@ class Database:
                 conn.close()
 
 
+    def add_communication_topic(self, topic_data: Dict) -> Optional[int]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO CommunicationTopics (PatientID, Topic, TopicType, Notes, AddedBy)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            topic_data['patient_id'],
+            topic_data['topic'],
+            topic_data['topic_type'],
+            topic_data.get('notes', ''),
+            topic_data.get('added_by', 1)
+        ))
+
+        topic_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return topic_id
+    
+    def get_patient_topics(self, patient_id: int, topic_type: str = None) -> List[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        if topic_type:
+            query = "SELECT * FROM CommunicationTopics WHERE PatientID = ? AND TopicType = ? ORDER BY CreatedAt DESC"
+            cursor.execute(query, (patient_id, topic_type))
+        else:
+            query = "SELECT * FROM CommunicationTopics WHERE PatientID = ? ORDER BY TopicType, CreatedAt DESC"
+            cursor.execute(query, (patient_id,))
+
+
+        topics = []
+        for row in cursor.fetchall():
+            topics.append({
+                'topic_id': row['TopicID'],
+                'patient_id': row['PatientID'],
+                'topic': row['Topic'],
+                'topic_type': row['TopicType'],
+                'notes': row['Notes'],
+                'added_by': row['AddedBy'],
+                'created_at': row['CreatedAt']
+            })
+        
+        conn.close()
+        return topics
+    
+    def delete_communication_topic(self, topic_id: int) -> bool:
+        conn = self.get_connection()
+        conn.execute("DELETE FROM CommunicationTopics WHERE TopicID = ?", (topic_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    def update_communication_topic(self, topic_id: int, topic_data: Dict) -> bool:
+        conn = self.get_connection()
+        conn.execute("""
+            UPDATE CommunicationTopics 
+            SET Topic = ?, TopicType = ?, Notes = ?
+            WHERE TopicID = ?
+        """, (
+            topic_data['topic'],
+            topic_data['topic_type'],
+            topic_data.get('notes', ''),
+            topic_id
+        ))
+        conn.commit()
+        conn.close()
+        return True
+
+
+    
+
+
+
+
+    
+
+
 if __name__ == "__main__":
     db = Database()
     print(f"Database created at: {db.db_path.absolute()}")

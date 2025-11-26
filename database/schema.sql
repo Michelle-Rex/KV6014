@@ -202,6 +202,18 @@ CREATE TABLE IF NOT EXISTS MemoryBook (
     FOREIGN KEY (UploadedBy) REFERENCES User(UserID)
 );
 
+CREATE TABLE IF NOT EXISTS CommunicationTopics (
+    TopicID INTEGER PRIMARY KEY AUTOINCREMENT,
+    PatientID INTEGER NOT NULL,
+    Topic TEXT NOT NULL,
+    TopicType TEXT NOT NULL CHECK (TopicType IN ('positive', 'avoid')),
+    Notes TEXT,
+    AddedBy INTEGER,
+    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (PatientID) REFERENCES Patient(PatientID) ON DELETE CASCADE,
+    FOREIGN KEY (AddedBy) REFERENCES User(UserID)
+);
+
 INSERT OR IGNORE INTO Role (RoleName) VALUES ('carer'), ('family_member');
 
 CREATE TABLE IF NOT EXISTS UserPreferences (
