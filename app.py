@@ -131,6 +131,15 @@ elif st.session_state.get('role') == 'family_member':
         ],
         "Patient Information": [
             st.Page("pages/family/patient_info.py", title="My Loved Ones"),
+            st.Page("pages/family/care_logs.py", title="Care Logs"),
+            st.Page("pages/family/communication_guide.py", title="Communication Guide"),
+
+        ],
+
+        "Memory Book": [
+            st.Page("pages/family/memory_book.py", title="Memory Book"),
+
+
         ],
         "Settings": [
             st.Page("pages/family/settings.py", title="Settings")

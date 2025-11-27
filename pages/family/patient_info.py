@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import date, timedelta, datetime
 
 # Role check
 if 'logged_in' not in st.session_state or not st.session_state.logged_in:
@@ -61,10 +62,82 @@ else:
     tab1, tab2, tab3, tab4 = st.tabs(["Recent Logs", "Medications", "Tasks", "Medical Info"])
     
     with tab1:
-        st.info("Recent daily logs will appear here. Coming soon!")
+        #st.info("Recent daily logs will appear here. Coming soon!")
+    
+        # Get last 5 days of logs, the rest they could see in the Care Logs page, as it is only meant for recent overview
+        start_date = (date.today() - timedelta(days=5)).isoformat()
+        end_date = date.today().isoformat()
+    
+        logs = db.get_patient_logs(patient['patient_id'], start_date, end_date)
+        
+        if logs:
+            st.write(f"Showing logs from last 5 days ({len(logs)} entries)")
+            
+            for log in logs[:5]:  
+                log_date = datetime.fromisoformat(log['date']).strftime('%A, %d %B')
+                
+                with st.expander(f"{log_date} at {log['time']}"):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.write("**Vitals:**")
+                        st.write(f"Temperature: {log['vitals']['temperature']}°C")
+                        st.write(f"Blood Pressure: {log['vitals']['blood_pressure']}")
+                        st.write(f"Heart Rate: {log['vitals']['heart_rate']} bpm")
+                    
+                    with col2:
+                        st.write("**Status:**")
+                        st.write(f"Mood: {log['activities']['mood']}")
+                        st.write(f"Appetite: {log['activities']['appetite']}")
+                        st.write(f"Calories: {log['total_calories']} kcal")
+                    
+                    if log['general_notes']:
+                        st.info(f"Notes: {log['general_notes']}")
+            
+            if st.button("View All Logs", use_container_width=True):
+                st.switch_page("pages/family/care_logs.py")
+        else:
+            st.info("No recent logs available for the last 5 days")
+            if st.button("View All Logs", use_container_width=True):
+                st.switch_page("pages/family/care_logs.py")
+        
+
     
     with tab2:
-        st.info("Current medications list will appear here. Coming soon!")
+        #st.info("Current medications list will appear here. Coming soon!")
+
+        medications = db.get_patient_medications(patient['patient_id'], active_only=True)
+        
+        if medications:
+            st.write(f"**Current Medications** ({len(medications)} active)")
+            
+            sorted_meds = sorted(medications, key=lambda x: x['scheduled_time'])
+            
+            for med in sorted_meds:
+                with st.container(border=True):
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.write(f"**{med['name']}** - {med['dosage']}")
+                        st.write(f"{med['scheduled_time']} | {med['frequency']}")
+                        if med['purpose']:
+                            st.caption(f"Purpose: {med['purpose']}")
+                    
+                    with col2:
+                        st.write(f"**Route:** {med['route']}")
+                        if med['prescriber']:
+                            st.caption(f"By: {med['prescriber']}")
+        else:
+            st.info("No active medications")
+        
+    
+        inactive_meds = db.get_patient_medications(patient['patient_id'], active_only=False)
+        inactive = [m for m in inactive_meds if not m['active']]
+        
+        if inactive:
+            with st.expander("Discontinued Medications"):
+                for med in inactive:
+                    st.write(f"{med['name']} - {med['dosage']} at {med['scheduled_time']}")
     
     with tab3:
         st.info("Upcoming tasks and activities will appear here. Coming soon!")
