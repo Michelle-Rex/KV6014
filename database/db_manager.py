@@ -345,24 +345,32 @@ class Database:
             if conn:
                 conn.close()
     
-    def get_patient_logs(self, patient_id: int, start_date: str = None, end_date: str = None) -> List[Dict]:
+    def get_patient_logs(self, patient_id: int, start_date: str = None, end_date: str = None, content_lvl = "full") -> List[Dict]:
         conn = None
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
+
+            #swich case for content lvl preference for family side, is 'full' by default
+            if content_lvl == "basic":
+                content_lvl_sql = "ContentLvl =! censored AND ContentLvl =! private"
+            elif content_lvl == "detailed":
+                content_lvl_sql = "ContentLvl =! private"
+            else:
+                content_lvl_sql = None
             
             if start_date and end_date:
                 cursor.execute('''
                     SELECT * FROM DailyLogs 
                     WHERE PatientID = ? AND LogDate BETWEEN ? AND ?
                     ORDER BY LogDate DESC, LogTime DESC
-                ''', (patient_id, start_date, end_date))
+                ''', (patient_id, start_date, end_date)) + content_lvl_sql
             else:
                 cursor.execute('''
                     SELECT * FROM DailyLogs 
                     WHERE PatientID = ?
                     ORDER BY LogDate DESC, LogTime DESC
-                ''', (patient_id,))
+                ''', (patient_id,)) + content_lvl_sql
             
             log_rows = cursor.fetchall()
             
