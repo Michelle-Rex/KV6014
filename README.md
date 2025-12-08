@@ -1,4 +1,4 @@
-\### streamlit run app.py
+### streamlit run app.py
 
 
 
@@ -17,4 +17,5 @@ In order to run this project for dev or test pursposes I would suggest the follo
 
 
 Todo: make a better readme
+
 
