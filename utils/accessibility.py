@@ -23,18 +23,18 @@ def apply_accessibility_css(theme: str, font_size: str, high_contrast: bool):
         message_received_bg = "#404040"
         message_received_text = "#000000"
     else:
-        # Light mode colors  
-        main_bg = "#FFFFFF"
-        main_text = "#000000"
-        sidebar_bg = "#4A90E2"  # Blue sidebar
-        sidebar_text = "#FFFFFF"  # White text on blue sidebar
-        button_bg = "#7C3AED"  # Violet buttons
-        button_text = "#FFFFFF"
-        button_hover = "#6D28D9"
-        message_sent_bg = "#DCF8C6"  # Keep WhatsApp green for sent
-        message_sent_text = "#000000"
-        message_received_bg = "#E8E8E8"
-        message_received_text = "#000000"
+	    # Light mode colors
+	    main_bg = "#FFFFFF"
+	    main_text = "#000000"
+	    sidebar_bg = "#36B0B9"  # Blue sidebar
+	    sidebar_text = "#000000"  # White text on blue sidebar
+	    button_bg = "#998DDF"  # Violet buttons
+	    button_text = "#000000"
+	    button_hover = "#6D28D9"
+	    message_sent_bg = "#DCF8C6"  # Keep WhatsApp green for sent
+	    message_sent_text = "#000000"
+	    message_received_bg = "#E8E8E8"
+	    message_received_text = "#000000"
     
     # Adjust for high contrast
     if high_contrast:

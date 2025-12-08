@@ -1106,6 +1106,44 @@ class Database:
             if conn:
                 conn.close()
 
+    def get_carers_for_family_member_patients(self, family_member_id: int) -> List[Dict]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT DISTINCT u.UserID, u.FirstName, u.LastName, u.Email,
+                       p.PatientID, p.FirstName as PatientFirstName, p.LastName as PatientLastName,
+                       fm.ContentAccessLvl
+                FROM Family_Member fm
+                JOIN Patient p ON fm.PatientID = p.PatientID
+                JOIN User u ON p.CarerID = u.UserID
+                WHERE fm.UserID = ?
+                ORDER BY p.PatientID, u.LastName
+            ''', (family_member_id,))
+            
+            carers = []
+            for row in cursor.fetchall():
+                carers.append({
+                    'user_id': row['UserID'],
+                    'first_name': row['FirstName'],
+                    'last_name': row['LastName'],
+                    'full_name': f"{row['FirstName']} {row['LastName']}",
+                    'email': row['Email'],
+                    'patient_id': row['PatientID'],
+                    'patient_name': f"{row['PatientFirstName']} {row['PatientLastName']}",
+                    'access_level': row['ContentAccessLvl']
+                })
+            
+            return carers
+        except Exception as e:
+            logger.error(f"Error getting carers for family member: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()
+
 
     def add_communication_topic(self, topic_data: Dict) -> Optional[int]:
         conn = self.get_connection()

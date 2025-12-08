@@ -134,10 +134,10 @@ else:
                     # Sent by carer (current user) - align right, blue background
                     st.markdown(f"""
                     <div style='text-align: right; margin: 10px 0;'>
-                        <div style='display: inline-block; background-color: #DCF8C6; padding: 10px 15px; 
+                        <div class='message-sent' style='display: inline-block; padding: 10px 15px; 
                                     border-radius: 15px; max-width: 70%; text-align: left;'>
-                            <div style='font-size: 14px; color: rgb(102, 102, 102)'>{msg['content']}</div>
-                            <div style='font-size: 11px; color: #666; margin-top: 5px;'>{time_str}</div>
+                            <div style='font-size: 14px; '>{msg['content']}</div>
+                            <div style='font-size: 11px; margin-top: 5px;'>{time_str}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -145,13 +145,13 @@ else:
                     # Received from family member - align left, gray background
                     st.markdown(f"""
                     <div style='text-align: left; margin: 10px 0;'>
-                        <div style='display: inline-block; background-color: #E8E8E8; padding: 10px 15px; 
+                        <div class='message-received' style='display: inline-block; padding: 10px 15px; 
                                     border-radius: 15px; max-width: 70%; text-align: left;'>
                             <div style='font-weight: bold; font-size: 12px; color: #075E54; margin-bottom: 3px;'>
                                 {msg['from_name']}
                             </div>
                             <div style='font-size: 14px;'>{msg['content']}</div>
-                            <div style='font-size: 11px; color: #666; margin-top: 5px;'>{time_str}</div>
+                            <div style='font-size: 11px; margin-top: 5px;'>{time_str}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
