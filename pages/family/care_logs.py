@@ -26,6 +26,9 @@ st.divider()
 
 view_mode = st.radio("View Mode", ["Recent Logs", "Date Range"], horizontal=True)
 
+#for user to select their preferred content level
+content_lvl = st.selectbox("Content Level", ["basic", "detailed", "full"])
+
 if view_mode == "Recent Logs":
     num_days = st.selectbox("Show logs from", ["Last 7 days", "Last 30 days", "Last 90 days"])
     
