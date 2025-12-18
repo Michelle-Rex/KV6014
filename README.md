@@ -12,10 +12,7 @@ In order to run this project for dev or test pursposes I would suggest the follo
 4. Once insisde you will need to run "python3 -m pip install pandas streamlit" to install the required python modules
 5. After that you are free to modify the files however you want! to run it though you should do: "streamlit run app.py"
 
-
-
-
-
-Todo: make a better readme
+Example Carer Login: john.doe@healthcare.com::hashed_password_1
+Example Family Login: emily.taylor@gmail.com::hashed_password_3
 
 
